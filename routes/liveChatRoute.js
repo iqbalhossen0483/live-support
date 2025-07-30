@@ -16,7 +16,21 @@ router.get("/online-users", async (req, res) => {
 
 router.get("/conversations", async (_req, res) => {
   try {
-    const conversationsQuery = `SELECT * from live_support_message_request`;
+    const { page = 1, limit = 30, status, user_id } = _req.query;
+
+    let conversationsQuery =
+      "SELECT users.name AS user_name, users.profile_image AS user_image, admin.name AS admin_name, admin.profile_image AS admin_image, lsm.* FROM live_support_message_request AS lsm INNER JOIN users ON users.id = lsm.user_id LEFT JOIN users AS admin ON admin.id = lsm.admin_id";
+
+    if (status && user_id) {
+      conversationsQuery += ` WHERE lsm.status = '${status}' AND lsm.user_id = ${user_id}`;
+    } else if (status && !user_id) {
+      conversationsQuery += ` WHERE lsm.status = '${status}'`;
+    } else if (!status && user_id) {
+      conversationsQuery += ` WHERE lsm.user_id = ${user_id}`;
+    }
+
+    conversationsQuery += ` LIMIT ${limit} OFFSET ${(page - 1) * limit}`;
+
     const conversations = await QueryDocument(conversationsQuery);
     res.send(conversations);
   } catch (error) {
