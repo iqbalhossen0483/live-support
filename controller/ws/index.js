@@ -1,0 +1,37 @@
+const { wss } = require("../../app");
+const { QueryDocument } = require("../../config/database");
+const { init, broadcastMessage } = require("./services");
+require("../../config/config");
+
+const users = new Map();
+
+wss.on("connection", (ws) => {
+  ws.on("message", (message) => {
+    try {
+      const parsed = JSON.parse(message.toString());
+
+      switch (parsed.type) {
+        case "init":
+          init(users, parsed, ws);
+          break;
+        case "message":
+          broadcastMessage(parsed, ws);
+          break;
+        default:
+          break;
+      }
+    } catch (error) {
+      console.lg(error);
+    }
+  });
+
+  ws.on("close", async () => {
+    if (ws.userId && users.has(ws.userId)) {
+      users.delete(ws.userId);
+      // save user online status
+      const updateQuery = `UPDATE live_support_online_users SET is_online = false WHERE user_id = ${ws.userId}`;
+      await QueryDocument(updateQuery);
+      console.log(`User disconnected: ${ws.userId}`);
+    }
+  });
+});
