@@ -1,6 +1,6 @@
 const { wss } = require("../../app");
 const { QueryDocument } = require("../../config/database");
-const { init, broadcastMessage } = require("./services");
+const { init, broadcastMessage, unreadMessageHandler } = require("./services");
 require("../../config/config");
 
 const users = new Map();
@@ -17,6 +17,8 @@ wss.on("connection", (ws) => {
         case "message":
           broadcastMessage(users, parsed, ws);
           break;
+        case "unread_messages":
+          unreadMessageHandler(users, parsed);
         default:
           break;
       }

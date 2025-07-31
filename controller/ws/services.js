@@ -135,7 +135,40 @@ async function broadcastMessage(activeUsers, parsedData, ws) {
   }
 }
 
+async function unreadMessageHandler(activeUsers, parsedData) {
+  try {
+    const { conversation_id, unreadmessagesId, user_id, sender_id } =
+      parsedData.data || {};
+
+    const ids = unreadmessagesId.join(",");
+
+    const updateQuery = `UPDATE live_support_conversations SET status = 'seen' WHERE conversation_id = ${conversation_id} AND message_id IN (${ids}) `;
+    await QueryDocument(updateQuery);
+
+    if (user_id && activeUsers.has(user_id)) {
+      activeUsers.get(user_id).send(
+        JSON.stringify({
+          type: "read_messages",
+          data: { unreadmessagesId },
+        })
+      );
+    }
+
+    if (sender_id && activeUsers.has(sender_id)) {
+      activeUsers.get(sender_id).send(
+        JSON.stringify({
+          type: "read_messages",
+          data: { unreadmessagesId },
+        })
+      );
+    }
+  } catch (error) {
+    console.log(error);
+  }
+}
+
 module.exports = {
   init,
   broadcastMessage,
+  unreadMessageHandler,
 };
