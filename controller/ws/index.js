@@ -15,23 +15,33 @@ wss.on("connection", (ws) => {
           init(users, parsed, ws);
           break;
         case "message":
-          broadcastMessage(parsed, ws);
+          broadcastMessage(users, parsed, ws);
           break;
         default:
           break;
       }
     } catch (error) {
-      console.lg(error);
+      console.log(error);
     }
   });
 
   ws.on("close", async () => {
-    if (ws.userId && users.has(ws.userId)) {
-      users.delete(ws.userId);
-      // save user online status
-      const updateQuery = `UPDATE live_support_online_users SET is_online = false WHERE user_id = ${ws.userId}`;
-      await QueryDocument(updateQuery);
-      console.log(`User disconnected: ${ws.userId}`);
+    try {
+      if (ws.isAdmin && ws.adminId && users.has(ws.adminId)) {
+        users.delete(ws.adminId);
+        // save user online status
+        const updateQuery = `UPDATE live_support_online_users SET is_online = false WHERE user_id = ${ws.adminId}`;
+        await QueryDocument(updateQuery);
+        console.log(`Admin disconnected: ${ws.adminId}`);
+      } else if (ws.userId && users.has(ws.userId)) {
+        users.delete(ws.userId);
+        // save user online status
+        const updateQuery = `UPDATE live_support_online_users SET is_online = false WHERE user_id = ${ws.userId}`;
+        await QueryDocument(updateQuery);
+        console.log(`User disconnected: ${ws.userId}`);
+      }
+    } catch (error) {
+      console.log(error);
     }
   });
 });

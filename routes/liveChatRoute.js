@@ -48,10 +48,32 @@ router.get("/conversations", async (_req, res) => {
 router.get("/conversations/:id", async (req, res) => {
   try {
     const id = req.params.id;
-    const conversationsQuery = `SELECT * from live_support_message_request WHERE id = ${id}`;
+    let conversationsQuery = `SELECT * from live_support_message_request WHERE id = ${id}`;
     const conversations = await QueryDocument(conversationsQuery);
-    const messageQuery = `SELECT * from live_support_conversations WHERE conversation_id = ${id}`;
-    const messages = await QueryDocument(messageQuery);
+    let messages = [];
+    if (conversations.length > 0) {
+      const messageQuery = `SELECT * from live_support_conversations WHERE conversation_id = ${conversations[0].id} ORDER BY created_at ASC`;
+      messages = await QueryDocument(messageQuery);
+    }
+    const data = {
+      ...conversations[0],
+      messages: messages,
+    };
+    res.send({ status: "success", data: data });
+  } catch (error) {
+    throw error;
+  }
+});
+router.get("/conversation_by_user_id/:id", async (req, res) => {
+  try {
+    const userId = req.params.id;
+    let conversationsQuery = `SELECT * from live_support_message_request WHERE user_id = ${userId} AND status != 'closed' ORDER BY created_at DESC LIMIT 1`;
+    const conversations = await QueryDocument(conversationsQuery);
+    let messages = [];
+    if (conversations.length > 0) {
+      const messageQuery = `SELECT * from live_support_conversations WHERE conversation_id = ${conversations[0].id} ORDER BY created_at ASC`;
+      messages = await QueryDocument(messageQuery);
+    }
     const data = {
       ...conversations[0],
       messages: messages,
