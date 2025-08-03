@@ -89,7 +89,7 @@ async function broadcastMessage(activeUsers, parsedData, ws) {
       }
 
       if (payload.admin_id && !hasAdmin) {
-        const updateConversationQuery = `UPDATE live_support_message_request SET admin_id = ${payload.admin_id} WHERE id = ${payload.conversation_id}`;
+        const updateConversationQuery = `UPDATE live_support_message_request SET admin_id = ${payload.admin_id}, status = 'active' WHERE id = ${payload.conversation_id}`;
         await QueryDocument(updateConversationQuery);
       }
     }

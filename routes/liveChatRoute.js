@@ -67,7 +67,7 @@ router.get("/conversations/:id", async (req, res) => {
 router.get("/conversation_by_user_id/:id", async (req, res) => {
   try {
     const userId = req.params.id;
-    let conversationsQuery = `SELECT * from live_support_message_request WHERE user_id = ${userId} AND status != 'closed' ORDER BY created_at DESC LIMIT 1`;
+    let conversationsQuery = `SELECT users.name AS admin_name, users.profile_image AS admin_image, lsmr.* from live_support_message_request AS lsmr INNER JOIN users ON users.id = lsmr.admin_id WHERE lsmr.user_id = ${userId} AND lsmr.status != 'closed' ORDER BY created_at DESC LIMIT 1`;
     const conversations = await QueryDocument(conversationsQuery);
     let messages = [];
     if (conversations.length > 0) {
