@@ -16,7 +16,7 @@ async function mySql() {
 }
 
 // Pool Query Function
-async function QueryDocument(query, data = null) {
+async function QueryDocument(query, data = null, isUpdate = false) {
   try {
     if (typeof data !== "object" && data === null) {
       throw { message: "data must be an object or null" };
@@ -43,9 +43,15 @@ async function QueryDocument(query, data = null) {
     }
 
     const connection = await mySql();
-    queryString = data
-      ? `${queryFirstpart} (${keys}) VALUES (${values}) ${queryLastPart}`
-      : `${queryFirstpart} ${queryLastPart}`;
+    if (isUpdate) {
+      queryString = data
+        ? `${queryFirstpart} ${keys} = ${values} ${queryLastPart}`
+        : `${queryFirstpart} ${queryLastPart}`;
+    } else {
+      queryString = data
+        ? `${queryFirstpart} (${keys}) VALUES (${values}) ${queryLastPart}`
+        : `${queryFirstpart} ${queryLastPart}`;
+    }
 
     const result = await connection.execute(queryString);
     await connection.end();

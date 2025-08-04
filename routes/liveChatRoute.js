@@ -33,6 +33,13 @@ router.get("/conversations", async (_req, res) => {
 
     const conversations = await QueryDocument(conversationsQuery);
 
+    // Count total unread messges for each conversation
+    for (const conversation of conversations) {
+      const unreadCountQuery = `SELECT COUNT(*) AS unread_count FROM live_support_conversations WHERE conversation_id = ${conversation.id} AND status = 'send' AND sender_type = 'user'`;
+      const unreadCountResult = await QueryDocument(unreadCountQuery);
+      conversation.unread_count = unreadCountResult[0].unread_count || 0;
+    }
+
     //count total document
     const totalQuery =
       "SELECT COUNT(*) AS total FROM live_support_message_request";
@@ -48,7 +55,7 @@ router.get("/conversations", async (_req, res) => {
 router.get("/conversations/:id", async (req, res) => {
   try {
     const id = req.params.id;
-    let conversationsQuery = `SELECT * from live_support_message_request WHERE id = ${id}`;
+    let conversationsQuery = `SELECT users.name AS user_name, users.profile_image AS user_image, lsm.* from live_support_message_request lsm INNER JOIN users ON users.id = lsm.user_id WHERE lsm.id = ${id}`;
     const conversations = await QueryDocument(conversationsQuery);
     let messages = [];
     if (conversations.length > 0) {
@@ -81,6 +88,23 @@ router.get("/conversation_by_user_id/:id", async (req, res) => {
     res.send({ status: "success", data: data });
   } catch (error) {
     throw error;
+  }
+});
+
+router.patch("/conversations/:id", async (req, res, next) => {
+  try {
+    const id = req.params.id;
+    const updateQuery = [
+      "UPDATE live_support_message_request SET",
+      ` WHERE id = ${id}`,
+    ];
+    await QueryDocument(updateQuery, req.body, true);
+    res.send({
+      status: "success",
+      message: "Conversation updated successfully",
+    });
+  } catch (error) {
+    next(error);
   }
 });
 
