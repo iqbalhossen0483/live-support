@@ -55,7 +55,7 @@ router.get("/conversations", async (_req, res) => {
 router.get("/conversations/:id", async (req, res) => {
   try {
     const id = req.params.id;
-    let conversationsQuery = `SELECT users.name AS user_name, users.profile_image AS user_image, lsm.* from live_support_message_request lsm INNER JOIN users ON users.id = lsm.user_id WHERE lsm.id = ${id}`;
+    let conversationsQuery = `SELECT users.name AS user_name, users.profile_image AS user_image, online_users.is_online AS user_online, lsm.* from live_support_message_request lsm INNER JOIN users ON users.id = lsm.user_id LEFT JOIN live_support_online_users AS online_users ON online_users.user_id = lsm.user_id WHERE lsm.id = ${id}`;
     const conversations = await QueryDocument(conversationsQuery);
     let messages = [];
     if (conversations.length > 0) {
@@ -74,7 +74,7 @@ router.get("/conversations/:id", async (req, res) => {
 router.get("/conversation_by_user_id/:id", async (req, res) => {
   try {
     const userId = req.params.id;
-    let conversationsQuery = `SELECT users.name AS admin_name, users.profile_image AS admin_image, lsmr.* from live_support_message_request AS lsmr INNER JOIN users ON users.id = lsmr.admin_id WHERE lsmr.user_id = ${userId} AND lsmr.status != 'closed' ORDER BY created_at DESC LIMIT 1`;
+    let conversationsQuery = `SELECT users.name AS admin_name, users.profile_image AS admin_image, online_users.is_online AS admin_online, lsmr.* from live_support_message_request AS lsmr INNER JOIN users ON users.id = lsmr.admin_id LEFT JOIN live_support_online_users AS online_users ON online_users.user_id = lsmr.admin_id WHERE lsmr.user_id = ${userId} AND lsmr.status != 'closed' ORDER BY created_at DESC LIMIT 1`;
     const conversations = await QueryDocument(conversationsQuery);
     let messages = [];
     if (conversations.length > 0) {
