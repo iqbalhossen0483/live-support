@@ -120,6 +120,13 @@ async function broadcastMessage(activeUsers, parsedData, ws) {
       data.user_id &&
       activeUsers.has(data.user_id)
     ) {
+      // get sender name and image
+      const senderQuery = `SELECT name, profile_image FROM users WHERE id = ${data.sender_id}`;
+      const senderResult = await QueryDocument(senderQuery);
+      data.user_name = senderResult[0]?.name || "Admin";
+      data.user_image = senderResult[0]?.profile_image || "";
+      data.user_online = 1;
+
       console.log("send message to user");
       activeUsers
         .get(data.user_id)
