@@ -64,70 +64,74 @@ async function init(activeUsers, parsedData, ws) {
 
 async function broadcastMessage(activeUsers, parsedData, ws) {
   try {
-    const { message_id, conversation_id, admin_id, user_id } =
-      parsedData.data || {};
-    const payload = {
+    const {
       message_id,
-      status: "send",
       conversation_id,
       admin_id,
       user_id,
+      sender_type,
+      sender_id,
+      message_type,
+      message,
+    } = parsedData.data || {};
+
+    const data = {
+      message_id: message_id,
+      status: "send",
+      sender_type: sender_type,
+      sender_id: sender_id,
+      message_type: message_type,
+      message: message,
+      conversation_id: conversation_id,
+      admin_id: admin_id,
+      user_id: user_id,
+      created_at: currentDate(),
     };
 
     // get or craeate  conversation or set Admin if not exist
-    if (!payload.conversation_id) {
+    if (!conversation_id) {
       const addMessageReqQuery = `INSERT INTO live_support_message_request (user_id, status) VALUES (${parsedData.data?.sender_id}, 'waiting')`;
       const result = await QueryDocument(addMessageReqQuery);
-      payload.conversation_id = result.insertId;
+      data.conversation_id = result.insertId;
     } else {
-      const getConversationQuery = `SELECT * FROM live_support_message_request WHERE id = ${payload.conversation_id}`;
+      const getConversationQuery = `SELECT * FROM live_support_message_request WHERE id = ${conversation_id}`;
       const result = await QueryDocument(getConversationQuery);
-      payload.conversation_id = result[0]?.id;
+      data.conversation_id = result[0]?.id;
       const hasAdmin = result[0]?.admin_id;
-      if (hasAdmin) {
-        payload.admin_id = hasAdmin;
-      }
 
-      if (payload.admin_id && !hasAdmin) {
-        const updateConversationQuery = `UPDATE live_support_message_request SET admin_id = ${payload.admin_id}, status = 'active' WHERE id = ${payload.conversation_id}`;
+      if (data.admin_id && !hasAdmin) {
+        const updateConversationQuery = `UPDATE live_support_message_request SET admin_id = ${data.admin_id}, status = 'active' WHERE id = ${data.conversation_id}`;
         await QueryDocument(updateConversationQuery);
       }
     }
 
+    ws.send(JSON.stringify({ type: "message-update", data: data }));
+
+    // remove null id from data
+    if (!data.admin_id) delete data.admin_id;
+    if (!data.user_id) delete data.user_id;
+
     const addMessageQuery = `INSERT INTO live_support_conversations`;
-    const data = {
-      message_id: payload.message_id,
-      status: payload.status,
-      sender_type: parsedData.data?.sender_type,
-      sender_id: parsedData.data?.sender_id,
-      message_type: parsedData.data?.message_type,
-      message: parsedData.data?.message,
-      conversation_id: payload.conversation_id,
-      created_at: currentDate(),
-    };
-
     await QueryDocument(addMessageQuery, data);
-
-    ws.send(JSON.stringify({ type: "message-update", data: payload }));
 
     // send message to user or admin
     if (
       data.sender_type === "admin" &&
-      payload.user_id &&
-      activeUsers.has(payload.user_id)
+      data.user_id &&
+      activeUsers.has(data.user_id)
     ) {
       console.log("send message to user");
       activeUsers
-        .get(payload.user_id)
+        .get(data.user_id)
         .send(JSON.stringify({ type: "message", data: data }));
     } else if (
       data.sender_type === "user" &&
-      payload.admin_id &&
-      activeUsers.has(payload.admin_id)
+      data.admin_id &&
+      activeUsers.has(data.admin_id)
     ) {
       console.log("send message to admin");
       activeUsers
-        .get(payload.admin_id)
+        .get(data.admin_id)
         .send(JSON.stringify({ type: "message", data: data }));
     }
   } catch (error) {

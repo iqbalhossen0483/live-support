@@ -10,7 +10,12 @@ app.use(express.static("public"));
 app.use(express.json());
 app.use(
   cors({
-    origin: ["http://localhost:3000", "http://localhost:3001"],
+    origin: [
+      "http://localhost:3000",
+      "http://localhost:3001",
+      "http://192.168.68.101:3000",
+      "http://192.168.68.101:3001",
+    ],
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
   })
 );
@@ -56,9 +61,10 @@ app.use((error, _req, res, _next) => {
 });
 
 const port = config.port;
-server.listen(port, () => {
+const HOST = "192.168.68.101";
+server.listen(port, HOST, () => {
   console.log("=".repeat(50));
-  console.info(`Server is running on http://localhost:${port}`);
-  console.info(`WebSocket available at ws://localhost:${port}${wsPrefix}`);
+  console.info(`Server is running on http://${HOST}:${port}`);
+  console.info(`WebSocket available at ws://${HOST}:${port}${wsPrefix}`);
   console.log("=".repeat(50));
 });

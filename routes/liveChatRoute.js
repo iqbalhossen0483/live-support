@@ -74,11 +74,12 @@ router.get("/conversations/:id", async (req, res) => {
 router.get("/conversation_by_user_id/:id", async (req, res) => {
   try {
     const userId = req.params.id;
-    let conversationsQuery = `SELECT users.name AS admin_name, users.profile_image AS admin_image, online_users.is_online AS admin_online, lsmr.* from live_support_message_request AS lsmr INNER JOIN users ON users.id = lsmr.admin_id LEFT JOIN live_support_online_users AS online_users ON online_users.user_id = lsmr.admin_id WHERE lsmr.user_id = ${userId} AND lsmr.status != 'closed' ORDER BY created_at DESC LIMIT 1`;
+    let conversationsQuery = `SELECT lsmr.* from live_support_message_request AS lsmr  WHERE lsmr.user_id = ${userId} AND lsmr.status != 'closed' ORDER BY created_at DESC LIMIT 1`;
     const conversations = await QueryDocument(conversationsQuery);
+
     let messages = [];
     if (conversations.length > 0) {
-      const messageQuery = `SELECT * from live_support_conversations WHERE conversation_id = ${conversations[0].id} ORDER BY created_at ASC`;
+      const messageQuery = `SELECT users.name AS user_name, users.profile_image AS user_image, online_users.is_online AS user_online, lsc.* from live_support_conversations AS lsc INNER JOIN users ON users.id = lsc.sender_id LEFT JOIN live_support_online_users AS online_users ON online_users.user_id = lsc.sender_id WHERE conversation_id = ${conversations[0].id} ORDER BY created_at ASC`;
       messages = await QueryDocument(messageQuery);
     }
     const data = {
